@@ -3,3 +3,4 @@
 *.pyc
 venv
 config.py
+path.py

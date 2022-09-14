@@ -11,6 +11,8 @@ except:
 
 
 import config
+import path
+import os
 
 # 기능 추가 할거 : 
 # 1. txt 파일 내용 자동 작성
@@ -23,7 +25,7 @@ import config
 class Jira:
     def __init__(self):
         # Target Files
-        self.path_rpm = config.path_rpm
+        self.file_path = path.file_path
 
         # Jira Connection
         self.url_prefix = config.jira_server+"/browse/"
@@ -36,23 +38,36 @@ class Jira:
         for project in self.get_projects():
             self.list_projects_key.append(project.raw['key'])
         
-    def make_template():
-        # Template - 이걸 메모장에 건별로 만들어 두고 그 메모장들을 불러와서 올리면?
-        site_name = ""
-        site_code = ""
-        site_version = ""
+
+    def make_template(self, site_code):
+        site_name = path.dict_sitename[site_code]
+
+        site_version = "" # rpm 파일 불러오기
+        for x in os.listdir(self.file_path + f"/{site_code}"):
+            if ".rpm" in x:
+                site_version += x.split(".r")[0]+"\n"
+            elif ".txt" in x:
+                change_name = x
+        
         site_contents = ""
-        download_link = ""
+        with open(f"{self.file_path}/{site_code}/{change_name}", "r") as file:
+            for tmp in file.readlines():
+                site_contents += tmp.replace("#", "")
 
+        jira_issue_link = []
+        for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[")]:
+            if "-" not in x:
+                continue
+            jira_issue_link.append(x)
+
+        download_link = path.dict_gdrive[site_code]
+        
         jira_template = f"{site_name} ({site_code}) RPM 배포\n"
-        jira_template += f"버전 : \n" 
-        jira_template += f"{site_version} \n" # get RPM으로 얻어와서 여러줄 추가
-        jira_template += f"수정 내용 : \n"
-        jira_template += f"{site_contents}\n" # get txt로 얻어와서 여러줄 추가
-        jira_template += f"다운로드 경로 : \n"
-        jira_template += f"{download_link}\n" # 업로드 경로가 다운로드 경로
+        jira_template += f"\n버전 : \n{site_version} \n" # get RPM으로 얻어와서 여러줄 추가
+        jira_template += f"\n수정 내용 : \n{site_contents}\n" # get txt로 얻어와서 여러줄 추가
+        jira_template += f"\n다운로드 경로 : \n{download_link}\n" # 업로드 경로가 다운로드 경로
 
-        return jira_template
+        return jira_template, jira_issue_link
 
     def _search_issue(self, project, repoter):
         search_issue_jql = f"summary~AsyncError and project={project} and search_issue={repoter} and status not in (closed, done)"
@@ -73,13 +88,17 @@ class Jira:
 
             for iss in self.jira.search_issues(q):
                 day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
+                #list_tmp = [day.days, ]
                 text = f"{day.days};[{iss.key}];{iss.fields.summary}"
 
-                if "DEVOPS" not in text:
-                    list_res.append(text)
-        print(datetime.now(), " - 종료")
+                if "DEVOPS-" in text or "IOC-" in text:
+                    continue
 
+                list_res.append(text)
+
+        print(datetime.now(), " - 종료")
         return list_res
+
     
     # 특정 이슈에 댓글 달기 2022-09-08 테스트 성공
     def add_comment(self, issue_code, comment):
@@ -108,18 +127,25 @@ class Jira:
     # 특정 폴더에 있는 RPM 파일 목록 얻어오기
     def get_rpmfilenames(self):
         pass
+    
+    def tmp_func(self):
+        str_name = ""
+        if str_name != "":
+            str_template, issue_code_list = self.make_template(str_name)
+            print(str_template)
+
+        for issue_code in list(set(issue_code_list)):
+            if issue_code != "":
+                print("https://hunesion.atlassian.net/browse/" + issue_code)
+                self.add_comment(issue_code, str_template)
 
 
 if __name__ == '__main__':
     jira = Jira()
 
-    #print(jira.jira_template)
+    for str_tmp in jira.get_my_issue():
+        print(str_tmp)
 
-    #for x in range(4):
-    #   jira.add_comment("이슈코드", jira.jira_template) # 잘됨
-
-    #for str_tmp in jira.get_my_issue():
-    #    print(str_tmp)
 
 '''
     # 이슈의 속성을 얻어오는 코드
