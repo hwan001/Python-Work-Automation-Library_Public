@@ -4,6 +4,7 @@ import subprocess
 try:
     from jira import JIRA
     from datetime import datetime
+    import webbrowser
 
 except:
     subprocess.check_call([sys.executable,'-m', 'pip', 'install', '--upgrade', 'pip'])
@@ -12,12 +13,14 @@ except:
 
 import config
 import path
+import shutil
+import path
 import os
 
 # 기능 추가 할거 : 
-# 1. txt 파일 내용 자동 작성
-# 2. txt 파일로 해당이슈 댓글 달기
-# 3. 구글 드라이브 경로에 파일 올리기
+# 1. txt 파일 내용 자동 작성 ㅇ
+# 2. txt 파일로 해당이슈 댓글 달기 ㅇ
+# 3. 구글 드라이브 경로에 파일 올리기 ㅇ
 # 4. doc 문서 읽어서 내용 추가하기
 # 5. 함수 별 시간 측정할 수있는 데코레이터
 # 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면?
@@ -42,7 +45,7 @@ class Jira:
     def make_template(self, site_code):
         site_name = path.dict_sitename[site_code]
 
-        site_version = "" # rpm 파일 불러오기
+        site_version = ""
         for x in os.listdir(self.file_path + f"/{site_code}"):
             if ".rpm" in x:
                 site_version += x.split(".r")[0]+"\n"
@@ -50,7 +53,7 @@ class Jira:
                 change_name = x
         
         site_contents = ""
-        with open(f"{self.file_path}/{site_code}/{change_name}", "r") as file:
+        with open(self.file_path+"/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
 
@@ -123,28 +126,56 @@ class Jira:
 
     def get_issue_status(self):
         pass
-
-    # 특정 폴더에 있는 RPM 파일 목록 얻어오기
-    def get_rpmfilenames(self):
-        pass
     
-    def tmp_func(self):
-        str_name = ""
-        if str_name != "":
-            str_template, issue_code_list = self.make_template(str_name)
+    # G-Drive 자동 업로드
+    def upload_gdrive(self, site_code):
+        # 사이트 코드로 업로드할 드라이브 경로 찾기
+        for x in os.listdir(path.gdirve_path):
+            if site_code in x:
+                target_path = path.gdirve_path + "/" + x
+
+        # 사이트 코드 경로 내부의 rpm 파일 다 가져오기
+        source_path = []
+        for x in os.listdir(path.file_path + "/" + site_code):
+            if ".rpm" in x:
+                source_path.append(path.file_path + "/" + site_code + "/" + x)
+
+        # 구글 드라이브 데스크탑으로 업로드하기
+        try:
+            for x in source_path:
+                shutil.copy(x, target_path)
+            print("업로드 완료")
+        except:
+            print("업로드 실패")
+
+
+    # 템플릿 만들어서 JIRA 댓글 달기
+    def auto_comment(self, site_code):
+        if path.dict_gdrive[site_code] == "":
+            return "다운로드 링크 없음"
+        if path.dict_sitename[site_code] == "":
+            return "사이트명 없음"
+
+        # 사이트 코드가 있으면 템플릿을 만들어서 기록
+        if site_code != "":
+            str_template, issue_code_list = self.make_template(site_code)
             print(str_template)
 
+        # 각 이슈 별로 댓글달고 웹페이지 열기, prohibition_list에 이슈코드를 넣으면 해당 이슈는 댓글 안달음, 중복 제거
+        prohibition_list = []
         for issue_code in list(set(issue_code_list)):
-            if issue_code != "":
-                print("https://hunesion.atlassian.net/browse/" + issue_code)
+            if issue_code != "" and issue_code not in prohibition_list:
                 self.add_comment(issue_code, str_template)
-
+                #print(config.jira_server + issue_code)
+                webbrowser.open(config.jira_server + issue_code)
 
 if __name__ == '__main__':
     jira = Jira()
+    jira.auto_comment("test") # 2022-09-15 성공
 
-    for str_tmp in jira.get_my_issue():
-        print(str_tmp)
+    # 나에게 할당된 이슈 가져오기
+    #for str_tmp in jira.get_my_issue():
+    #    print(str_tmp)
 
 
 '''
