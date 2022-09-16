@@ -13,15 +13,16 @@ except:
 
 import config
 import path
+import func_docx
+
 import shutil
-import path
 import os
 
 # 기능 추가 할거 : 
 # 1. txt 파일 내용 자동 작성 ㅇ
 # 2. txt 파일로 해당이슈 댓글 달기 ㅇ
 # 3. 구글 드라이브 경로에 파일 올리기 ㅇ
-# 4. doc 문서 읽어서 내용 추가하기
+# 4. doc 문서 읽어서 내용 추가하기 
 # 5. 함수 별 시간 측정할 수있는 데코레이터
 # 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면?
 
@@ -31,7 +32,7 @@ class Jira:
         self.file_path = path.file_path
 
         # Jira Connection
-        self.url_prefix = config.jira_server+"/browse/"
+        self.url_prefix = config.jira_server + "/browse/"
         self.options = {'server': config.jira_server}
         self.jira = JIRA(self.options, basic_auth=config.jira_basic_auth)
         self.myid = config.jira_myid
@@ -41,6 +42,8 @@ class Jira:
         for project in self.get_projects():
             self.list_projects_key.append(project.raw['key'])
         
+        self.site_contents = ""
+
 
     def make_template(self, site_code):
         site_name = path.dict_sitename[site_code]
@@ -56,6 +59,7 @@ class Jira:
         with open(self.file_path+"/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
+        self.site_contents = site_contents
 
         jira_issue_link = []
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[")]:
@@ -127,12 +131,18 @@ class Jira:
     def get_issue_status(self):
         pass
     
+    # docx에 수정 내용 추가하기
+    def append_docx(self, file_name, contents):
+        my_docx = func_docx.Docx()
+        my_docx.append_contents(file_name, contents)
+
+
     # G-Drive 자동 업로드
     def upload_gdrive(self, site_code):
         # 사이트 코드로 업로드할 드라이브 경로 찾기
         for x in os.listdir(path.gdirve_path):
             if site_code in x:
-                target_path = path.gdirve_path + "/" + x
+                target_path = path.gdirve_path + "/" + x + "/패치"
 
         # 사이트 코드 경로 내부의 rpm 파일 다 가져오기
         source_path = []
@@ -144,13 +154,20 @@ class Jira:
         try:
             for x in source_path:
                 shutil.copy(x, target_path)
-            print("업로드 완료")
+                print(x, target_path)
+            
+            # 워드 내용 추가
+            #self.append_docx(target_path+"/패치 내용.docx", datetime.datetime.now().strftime('%Y-%M-%d') + "\n" + self.site_contents)
+            print(site_code + " 업로드 완료")
+
+            #print(path.dict_gdrive[site_code])
+            webbrowser.open(path.dict_gdrive[site_code])
         except:
-            print("업로드 실패")
+            print(site_code + " 업로드 실패")
 
 
     # 템플릿 만들어서 JIRA 댓글 달기
-    def auto_comment(self, site_code):
+    def auto_comment(self, site_code, white_list):
         if path.dict_gdrive[site_code] == "":
             return "다운로드 링크 없음"
         if path.dict_sitename[site_code] == "":
@@ -161,19 +178,36 @@ class Jira:
             str_template, issue_code_list = self.make_template(site_code)
             print(str_template)
 
-        # 각 이슈 별로 댓글달고 웹페이지 열기, prohibition_list에 이슈코드를 넣으면 해당 이슈는 댓글 안달음, 중복 제거
-        prohibition_list = []
+        # 각 이슈 별로 댓글달고 웹페이지 열기, white_list 이슈코드에 있는 것만 달음, 중복 제거
+        #prohibition_list = []
         for issue_code in list(set(issue_code_list)):
-            if issue_code != "" and issue_code not in prohibition_list:
+            if issue_code != "" and issue_code in white_list:
                 self.add_comment(issue_code, str_template)
-                #print(config.jira_server + issue_code)
-                webbrowser.open(config.jira_server + issue_code)
+
+                #print(config.jira_server + "/browse/" + issue_code)
+                webbrowser.open(config.jira_server + "/browse/" + issue_code)
+
 
 if __name__ == '__main__':
     jira = Jira()
-    jira.auto_comment("test") # 2022-09-15 성공
+    
+    site_codes = []
+    white_list = []
 
-    # 나에게 할당된 이슈 가져오기
+    # 2022-09-16 성공
+    for site_code in site_codes:
+        try:
+            jira.upload_gdrive(site_code)
+        except:
+            print(site_code + " - upload err")
+
+        try:
+            jira.auto_comment(site_code, white_list) 
+        except:
+            print(site_code + " - comment err")
+
+
+    #나에게 할당된 이슈 가져오기
     #for str_tmp in jira.get_my_issue():
     #    print(str_tmp)
 
