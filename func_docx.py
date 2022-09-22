@@ -21,6 +21,9 @@ class Docx():
         doc.add_paragraph(paragraph)
         doc.save(file_path)
 
+
+
 if __name__ == '__main__':
-    my_doc = Docx()
+    #my_doc = Docx()
     #my_doc.append_contents()
+    pass

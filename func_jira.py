@@ -3,7 +3,6 @@ import subprocess
 
 try:
     from jira import JIRA
-    from datetime import datetime
     import webbrowser
 
 except:
@@ -15,6 +14,8 @@ import config
 import path
 import func_docx
 
+from datetime import datetime
+import time
 import shutil
 import os
 
@@ -22,9 +23,24 @@ import os
 # 1. txt 파일 내용 자동 작성 ㅇ
 # 2. txt 파일로 해당이슈 댓글 달기 ㅇ
 # 3. 구글 드라이브 경로에 파일 올리기 ㅇ
-# 4. doc 문서 읽어서 내용 추가하기 
-# 5. 함수 별 시간 측정할 수있는 데코레이터
-# 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면?
+# 4. doc 문서 읽어서 내용 추가하기 ㅇ
+# 5. 함수 별 시간 측정할 수있는 데코레이터 ㅇ
+# 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면? ㅁ
+
+def logging_deco(func):
+    def wrapped_func(*args):
+        start_r = time.perf_counter()
+        start_p = time.process_time()
+        ret = func(*args)
+        end_r = time.perf_counter()
+        end_p = time.process_time()
+        
+        elapsed_r = end_r - start_r
+        elapsed_p = end_p - start_p
+        print(f'{func.__name__} : {elapsed_r:.6f}sec (Perf_Counter) / {elapsed_p:.6f}sec (Process Time)')
+        return ret
+    return wrapped_func
+
 
 class Jira:
     def __init__(self):
@@ -86,24 +102,25 @@ class Jira:
         return self.jira.projects()
 
     # 나에게 할당된 이슈들 링크, 제목, 지난 날짜를 알려줌 2022-09-08 테스트 성공
+    @logging_deco
     def get_my_issue(self):
-        print(datetime.now(), " - 시작")
+        #print(datetime.now(), " - 시작")
         list_res = []
-
+        
         for x in self.list_projects_key:
             q = f'project = "{x}" AND assignee = {self.myid} ORDER BY created DESC'
 
             for iss in self.jira.search_issues(q):
                 day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                #list_tmp = [day.days, ]
+                list_tmp = [day.days, iss.key, iss.fields.summary]
                 text = f"{day.days};[{iss.key}];{iss.fields.summary}"
 
                 if "DEVOPS-" in text or "IOC-" in text:
                     continue
 
-                list_res.append(text)
+                list_res.append(list_tmp)
 
-        print(datetime.now(), " - 종료")
+        #print(datetime.now(), " - 종료")
         return list_res
 
     
@@ -169,9 +186,9 @@ class Jira:
     # 템플릿 만들어서 JIRA 댓글 달기
     def auto_comment(self, site_code, white_list):
         if path.dict_gdrive[site_code] == "":
-            return "다운로드 링크 없음"
+            print("다운로드 링크 없음")
         if path.dict_sitename[site_code] == "":
-            return "사이트명 없음"
+            print("사이트명 없음")
 
         # 사이트 코드가 있으면 템플릿을 만들어서 기록
         if site_code != "":
@@ -184,16 +201,17 @@ class Jira:
             if issue_code != "" and issue_code in white_list:
                 self.add_comment(issue_code, str_template)
 
-                #print(config.jira_server + "/browse/" + issue_code)
+                print(config.jira_server + "/browse/" + issue_code)
                 webbrowser.open(config.jira_server + "/browse/" + issue_code)
 
 
 if __name__ == '__main__':
     jira = Jira()
     
-    site_codes = []
-    white_list = []
+    site_codes = ["KR"]
+    white_list = ["YMSYS-293"]
 
+    """
     # 2022-09-16 성공
     for site_code in site_codes:
         try:
@@ -201,15 +219,15 @@ if __name__ == '__main__':
         except:
             print(site_code + " - upload err")
 
-        try:
-            jira.auto_comment(site_code, white_list) 
-        except:
-            print(site_code + " - comment err")
-
+        #try:
+        jira.auto_comment(site_code, white_list) 
+        #except e:
+            #print(site_code + " - comment err")
+    """
 
     #나에게 할당된 이슈 가져오기
-    #for str_tmp in jira.get_my_issue():
-    #    print(str_tmp)
+    for str_tmp in jira.get_my_issue():
+        print(str_tmp)
 
 
 '''
