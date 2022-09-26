@@ -3,3 +3,6 @@ requests
 selenium
 python-docx
 webbrowser
+pyexcel
+pyexcel-xls
+pyexcel-text

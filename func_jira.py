@@ -27,6 +27,7 @@ import os
 # 5. 함수 별 시간 측정할 수있는 데코레이터 ㅇ
 # 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면? ㅁ
 
+
 def logging_deco(func):
     def wrapped_func(*args):
         start_r = time.perf_counter()
@@ -60,10 +61,11 @@ class Jira:
         
         self.site_contents = ""
 
-
+    # RPM 배포 템플릿 생성하기
     def make_template(self, site_code):
         site_name = path.dict_sitename[site_code]
 
+        # 해당 사이트 코드 내부의 rpm 파일과 txt 파일 가져오기
         site_version = ""
         for x in os.listdir(self.file_path + f"/{site_code}"):
             if ".rpm" in x:
@@ -71,18 +73,21 @@ class Jira:
             elif ".txt" in x:
                 change_name = x
         
+        # txt 파일 내용 가져오기
         site_contents = ""
         with open(self.file_path+"/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
         self.site_contents = site_contents
 
+        # 내용 파싱해서 수정된 이슈코드 얻기
         jira_issue_link = []
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[")]:
             if "-" not in x:
                 continue
             jira_issue_link.append(x)
 
+        # 해당 코드의 업로드 링크 참조 (미리 작성해둔 딕셔너리)
         download_link = path.dict_gdrive[site_code]
         
         jira_template = f"{site_name} ({site_code}) RPM 배포\n"
@@ -92,6 +97,7 @@ class Jira:
 
         return jira_template, jira_issue_link
 
+    # jql을 사용한 이슈 검색
     def _search_issue(self, project, repoter):
         search_issue_jql = f"summary~AsyncError and project={project} and search_issue={repoter} and status not in (closed, done)"
         jira_issue = self.jira.search_issues(search_issue_jql)
@@ -101,10 +107,9 @@ class Jira:
     def get_projects(self):
         return self.jira.projects()
 
-    # 나에게 할당된 이슈들 링크, 제목, 지난 날짜를 알려줌 2022-09-08 테스트 성공
+    # 나에게 할당된 이슈들 링크, 제목, 지난 날짜를 알려줌 -> 2022-09-08 성공
     @logging_deco
     def get_my_issue(self):
-        #print(datetime.now(), " - 시작")
         list_res = []
         
         for x in self.list_projects_key:
@@ -112,7 +117,7 @@ class Jira:
 
             for iss in self.jira.search_issues(q):
                 day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                list_tmp = [day.days, iss.key, iss.fields.summary]
+                list_tmp = [day.days, iss.key, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
                 text = f"{day.days};[{iss.key}];{iss.fields.summary}"
 
                 if "DEVOPS-" in text or "IOC-" in text:
@@ -120,7 +125,6 @@ class Jira:
 
                 list_res.append(list_tmp)
 
-        #print(datetime.now(), " - 종료")
         return list_res
 
     
@@ -128,6 +132,7 @@ class Jira:
     def add_comment(self, issue_code, comment):
         comment_to_edit = self.jira.add_comment(issue_code, 'Change this content later')
         comment_to_edit.update(body=comment)
+
 
     # 특정 이슈 댓글 가져오기
     def get_comments(self, issue_code):
@@ -148,7 +153,7 @@ class Jira:
     def get_issue_status(self):
         pass
     
-    # docx에 수정 내용 추가하기
+    # docx에 수정 내용 이어붙이기
     def append_docx(self, file_name, contents):
         my_docx = func_docx.Docx()
         my_docx.append_contents(file_name, contents)
@@ -178,6 +183,8 @@ class Jira:
             print(site_code + " 업로드 완료")
 
             #print(path.dict_gdrive[site_code])
+
+            # 업로드한 페이지 열기
             webbrowser.open(path.dict_gdrive[site_code])
         except:
             print(site_code + " 업로드 실패")
@@ -187,6 +194,7 @@ class Jira:
     def auto_comment(self, site_code, white_list):
         if path.dict_gdrive[site_code] == "":
             print("다운로드 링크 없음")
+
         if path.dict_sitename[site_code] == "":
             print("사이트명 없음")
 
@@ -207,41 +215,53 @@ class Jira:
 
 if __name__ == '__main__':
     jira = Jira()
-    
-    site_codes = ["KR"]
-    white_list = ["YMSYS-293"]
 
-    """
-    # 2022-09-16 성공
-    for site_code in site_codes:
-        try:
+    mode = 2
+
+    # 임시로 자주 사용하는 기능들을 작성해둠
+    if mode == 1:
+        # 특정 디렉토리에 있는 사이트 코드(폴더 명)를 가져온다.
+        site_codes = []
+        for x in os.listdir(path.file_path):
+            if os.path.isdir(path.file_path + "/" + x):
+                site_codes.append(x)
+
+        # 댓글 업로드를 원하는 이슈 번호를 문자열로 넣어주면, 업로드 내용 중 해당 건이 있을 경우만 댓글 달아줌
+        white_list = []
+        
+        # 준비된 파일 업로드 후 댓글 달기 -> 2022-09-16 성공, docx 수정 및 
+        for site_code in site_codes:
             jira.upload_gdrive(site_code)
-        except:
-            print(site_code + " - upload err")
+            jira.auto_comment(site_code, white_list) 
 
-        #try:
-        jira.auto_comment(site_code, white_list) 
-        #except e:
-            #print(site_code + " - comment err")
-    """
+    elif mode == 2:
+        #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
+        cnt = 0
+        str_res = ""
+        file_path = os.environ["USERPROFILE"] + "/Desktop/tmp1234.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
+        print(file_path)
 
-    #나에게 할당된 이슈 가져오기
-    for str_tmp in jira.get_my_issue():
-        print(str_tmp)
+        for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[0]))):
+            str_res += str(str_tmp) + "\n"
+            cnt+=1
 
+        str_res += "count :" + str(cnt)
+        print(str_res)
 
-'''
-    # 이슈의 속성을 얻어오는 코드
-    q = 'project = "이슈코드" ORDER BY created DESC'
-    issues = jira.jira.search_issues(q)
-    for iss in issues:
-        o = jira.jira.issue(iss.key)
+        with open(file_path, "w") as f:
+            f.write(str_res)
+
+    elif mode == 3:
+        # 이슈의 속성을 얻어오는 코드
+        q = 'project = "이슈코드" ORDER BY created DESC'
+        issues = jira.jira.search_issues(q)
+        for iss in issues:
+            o = jira.jira.issue(iss.key)
+            for i in dir(iss.fields):
+                if i == 'assignee' and "담당자" in str(getattr(iss.fields,i)):
+                    print(iss.key, " - " + iss.raw['fields'][i])
+            print(o.assignee)
+
+        iss = jira.jira.issue('이슈코드')
         for i in dir(iss.fields):
-            if i == 'assignee' and "담당자" in str(getattr(iss.fields,i)):
-                print(iss.key, " - " + iss.raw['fields'][i])))
-        #print(o.assignee)
-
-    iss = jira.jira.issue('이슈코드')
-    for i in dir(iss.fields):
-        print(i+":"+str(getattr(iss.fields,i)))
-'''
+            print(i+":"+str(getattr(iss.fields,i)))
