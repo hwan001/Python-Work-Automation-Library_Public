@@ -2,12 +2,13 @@ import sys
 import subprocess
 
 try:
-    import requests
+    #import requests
     import os
 
 except:
-    subprocess.check_call([sys.executable,'-m', 'pip', 'install', '--upgrade', 'pip'])
-    subprocess.check_call([sys.executable,'-m', 'pip', 'install', '-r', 'requirements.txt'])
+    pass
+    #subprocess.check_call([sys.executable,'-m', 'pip', 'install', '--upgrade', 'pip'])
+    #subprocess.check_call([sys.executable,'-m', 'pip', 'install', '-r', 'requirements.txt'])
 
 import config
 
@@ -21,14 +22,19 @@ class Jenkins():
         pass
 
     # 입력받은 프로젝트 명을 가진 item의 빌드를 api로 진행
-    def build(self, project_view, project_name):
-        #print(f"curl -X POST {config.jenkins_server}/view/" + project_view + "/job/" + project_name + f"/build --user {config.jenkins_user}:{config.jenkins_pw}")
-        os.system(f"curl -X POST {config.jenkins_server}/view/" + project_view + "/job/" + project_name + f"/build --user {config.jenkins_user}:{config.jenkins_pw}")
-
+    def build(self, project_view = "i-oneNet_Company", project_name=""):
+        #query = f"curl -X POST {config.jenkins_server}/view/{project_view}/job/{project_name}/build --user {config.jenkins_user}:{config.jenkins_pw}"
+        query = f"curl -X POST {config.jenkins_server}/job/{project_name}/build --user {config.jenkins_user}:{config.jenkins_pw}"
+        
+        print(query)
+        os.system(query)
+        
 if __name__ == '__main__':
     jenkins = Jenkins()
-    #jenkins.build("asdf", "fda")
 
+    list_build = []
+    for item in list_build:
+        jenkins.build(project_name=item)
 
 
 

@@ -6,13 +6,14 @@ from func_socket import *
 
 #DEFINE_DEBUG = 1
 
+import config
+
 class my_class:
     def __init__(self, str_version, str_company):
-        gerrit = Gerrit()
-
         #list_onenet_project_file = ["", "", "", ""]
 
         # gerrit에서 특정 조건의 버전들을 얻어온다.
+        gerrit = Gerrit()
         list_hyphen_version = []
         json_tmp = gerrit.send_api("/projects/onenet%2Frpm/branches", "GET")
 
@@ -29,6 +30,8 @@ class my_class:
         if str_version in list_hyphen_version:
             str_separator = "-"
                 
+                
+        # 변수 설정        
         self.str_version = str_version 
         self.str_company = str_company
         
@@ -38,7 +41,7 @@ class my_class:
         # repo server info
         self.repo_ip = config.my_repo_ip
         self.repo_port = config.my_repo_port
-        self.repo_user = config.my_repo_usery
+        self.repo_user = config.my_repo_user
         self.repo_pw = config.my_repo_pw
     
         # gerrit var
@@ -94,131 +97,190 @@ class my_class:
         
         
     # Create Company Bransh
-    def Make_CompanyBranch_Details_Manual(self):
+    def Make_CompanyBranch_Details_Manual(self, isPrint=False, makeTxt=False):
         str_result = ""
         list_result = []
+        debug = False
+        file_path = os.environ["USERPROFILE"] + "/desktop/" + self.str_version + "-" + self.str_company + ".txt"
+        
+        
+        str_result = "!!!진행 전 해당 버전 마스터의 누락된 사항 확인하기!!!"
+        list_result.append(str_result)
+        if debug: print(str_result)
         
         str_result = "---------------------------------------------------------"
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = "Version : " + self.str_version
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = "Company : " + self.str_company
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = "\n1. Create Branch : " + self.urls[0]
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = f" ID : {config.jenkins_user}"
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = " PW : " + self.accounts[f"{config.jenkins_user}"]
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = " Branch Name : " + self.str_gerrit_branch
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = " Initial Revision : " + self.str_gerrit_branch_2
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = "\n2. Create Change (onenet/manifest) : " + self.urls[1]
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = " Select branch for new change : " + self.str_gerrit_branch
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = " Description : " + self.str_gerrit_manifest_comment
         list_result.append(str_result)
-        print(str_result)
+        if debug: print(str_result)
         
         str_result = "\n default.xml :"
         str_default = '''<default revision="''' + self.str_gerrit_branch + '''" remote="origin"/>'''
         list_result.append(str_result)
         list_result.append(str_default)
-        print(str_result)
-        print(str_default)
+        if debug: print(str_result)
+        if debug: print(str_default)
         
         str_result = "\n release.xml :"
         str_release = '''<default revision="''' + self.str_gerrit_branch + '''" remote="origin"/>'''
         list_result.append(str_result)
         list_result.append(str_release)
-        print(str_result)
-        print(str_release)
+        if debug: print(str_result)
+        if debug: print(str_release)
 
-        print("\n\n3. Code-Review")
         str_result = "\n\n3. Code-Review"
         list_result.append(str_result)
+        if debug: print(str_result)
         
+        str_result = f"\n\n4. New-Item_Jenkins: {self.urls[3]}"
+        list_result.append(str_result)
+        if debug: print(str_result)
 
+        str_result = f" ID : {config.jenkins_user}"
+        list_result.append(str_result)
+        if debug: print(str_result)
         
-        print("\n\n4. New-Item_Jenkins: ", self.urls[3])
-        print(f" ID : {config.jenkins_user}")
-        print(" PW : ", self.accounts[f"{config.jenkins_user}"])
-        print(" Enter an item name : ", self.str_jenkins)
-        print(" Copy from : ", self.str_jenkins_2)
-        print(" Manifest Branch : ", self.str_gerrit_branch)
+        str_result = " PW : " + str(self.accounts[f"{config.jenkins_user}"])
+        list_result.append(str_result)
+        if debug: print(str_result)
         
-        print(" Build > Execute shell : ")
+        str_result = f" Enter an item name : {self.str_jenkins}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = f" Copy from : {self.str_jenkins_2}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = f" Manifest Branch : {self.str_gerrit_branch}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = " Build > Execute shell : "
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
         for tmp in self.list_jenkins_build_text:
-            print(tmp)
+            list_result.append(tmp)
+            if debug: print(tmp)
         
-        print("\n\n5. Repo : ", self.urls[4])
-        print(" Command : ")
+        
+        str_result = f"\n\n5. Repo : {self.urls[4]}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = " Command : "
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
         for cmd in self.list_repo_code:
-            print(cmd)
+            list_result.append(cmd)
+            if debug: print(cmd)
         
-        print("\n\n6. Create Change (onenet/system) : ", self.urls[2])
-        print(" Select branch for new change : ", self.str_gerrit_branch)
-        print(" Description : ", self.str_gerrit_system_comment)
-        print(" File : config/rpm/config.top")
-        print(" Edit : CONFIG_COMPANY_NAME=\"" + self.str_company + "\"")
-        
-        print("\n\n7. Code-Review")
-        
-        print("\n\n8. Jenkins Build")
-        
-        print("---------------------------------------------------------")
+        str_result = f"\n\n6. Create Change (onenet/system) : {self.urls[2]}"
+        list_result.append(str_result)
+        if debug: print(str_result)
 
-    # list to String
-    def repocode_to_string(self):
-        str_tmp = ""
-        for tmp in self.list_repo_code:
-            str_tmp += tmp + "\n"
-        return str_tmp
-    
-    # 
+        str_result = f" Select branch for new change : {self.str_gerrit_branch}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+
+        str_result = f" Description : {self.str_gerrit_system_comment}"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = " File : config/rpm/config.top"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = f" Edit : CONFIG_COMPANY_NAME=\"{self.str_company}\""
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = "\n\n7. Code-Review"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = "\n\n8. Jenkins Build"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        str_result = "---------------------------------------------------------"
+        list_result.append(str_result)
+        if debug: print(str_result)
+        
+        if isPrint:
+            for x in list_result:
+                print(x)
+        
+        if makeTxt:
+            for i in range(len(list_result)):
+                list_result[i] += "\n"
+                
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.writelines(list_result)
+        
+    # repo
     def git_repo(self, is_log=True):
-        if is_log:
-            print("Commands : ", ";".join(self.list_repo_code))
+        if is_log: print("Commands : ", ";".join(self.list_repo_code))
         return Ssh.ssh_cmd(self.repo_ip, self.repo_port, self.repo_user, self.repo_pw, self.list_repo_code)
     
-    def my_jenkins_build(self):
-        Jenkins.jenkins_build("i-oneNet_Company", self.str_jenkins)
+    # build
+    def jenkins_build(self):
+        jenkins = Jenkins()
+        jenkins.build(project_name=self.str_jenkins)
         
     
     # Create Company Bransh
-    def Create_CompanyBranch_Auto2(self, str_version, str_company):
-        
+    def Create_CompanyBranch_Auto(self, str_version, str_company):
+        pass
         # -----------------------------------------------------------------------------
         # 1. 브랜치명 체크하기 : 입력받은 브랜치 명이 Gerrit에 존재하는지 검사
         # -----------------------------------------------------------------------------
         #if(check_branchName(str_company)):
-        if True:
-            print("1. Pass")
-        else:
-            print("1. Error")
-            #return
+        #if True:
+        #    print("1. Pass")
+        #else:
+        #    print("1. Error")
+        #    return
         
         # -----------------------------------------------------------------------------
         # 2. [시크릿 모드] 젠킨스 계정으로 Gerrit 접속하여 manifest 에 컴퍼니 브랜치 생성하기 -> 코드리뷰 필요
@@ -229,37 +291,34 @@ class my_class:
         # 3. [시크릿 모드] 젠킨스 계정으로 Jenkins 접속하여 item 생성하기 (company 탭)
         # -----------------------------------------------------------------------------
         
+        
         # -----------------------------------------------------------------------------
         # 4. repo로 소스코드 동기화하기
         # -----------------------------------------------------------------------------
         #self.git_repo()
         
-        #ssh = ssh_connection(repoServer_ip, repoServer_port, repoSever_user, repoSever_pw)
+        # -----------------------------------------------------------------------------
+        # 5. [시크릿 모드] 젠킨스 계정으로 Gerrit 접속하여 system 생성하기 -> 코드리뷰
+        # -----------------------------------------------------------------------------
         
-        #ssh_cmd(ssh, str_repo_cd_start)
-        #ssh_cmd(ssh, str_repo_code_test)
-        
-        #ssh.close()
         
         # -----------------------------------------------------------------------------
-        # 5. [시크릿 모드] 젠킨스 계정으로 Gerrit 접속하여 system 에 컴퍼니 브랜치 생성하기 
+        # 6. 젠킨스 빌드
         # -----------------------------------------------------------------------------
+        #self.jenkins_build()
     
     
-# Create dummy file for TEST
-def test_file_create(data, unit="gb"):
-    dict_size = {
-        "b":1,
-        "kb":1024, 
-        "mb":1024*1024, 
-        "gb":1024*1024*1024, 
-        "B":1,
-        "KB":1024, 
-        "MB":1024*1024, 
-        "GB":1024*1024*1024, 
-    }
-
-    with open("test_" + str(len(data)) + unit + ".txt", "wb") as f:
-        f.write(data * dict_size[unit])
-    
-    print("Write ", len(data) * dict_size[unit])
+if __name__ == "__main__":
+    list_target = [("0.0.0", "TEST")]
+    for target in list_target:
+        tmp = my_class(target[0], target[1])
+        
+        sel = 1
+        if sel == 1:
+            tmp.Make_CompanyBranch_Details_Manual(isPrint=False, makeTxt=True) # 0927 정상
+        elif sel == 2:
+            res = tmp.git_repo(True) # 2022-07-05 테스트 성공, 0927 정상 
+        elif sel == 3:
+            tmp.jenkins_build() # 2022-09-05 테스트 성공, 0926 정상
+            
+        del tmp

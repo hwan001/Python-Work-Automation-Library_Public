@@ -18,6 +18,7 @@ from datetime import datetime
 import time
 import shutil
 import os
+import win32com
 
 # 기능 추가 할거 : 
 # 1. txt 파일 내용 자동 작성 ㅇ
@@ -25,7 +26,10 @@ import os
 # 3. 구글 드라이브 경로에 파일 올리기 ㅇ
 # 4. doc 문서 읽어서 내용 추가하기 ㅇ
 # 5. 함수 별 시간 측정할 수있는 데코레이터 ㅇ
-# 6. 매일 새벽에 할당된 이슈들 가져와서 이전이랑 기록 비교하려면? ㅁ
+# 기능 추가 할거 : 
+# 6. 매일 아침 7시에 나한테 할당된 이슈들 가져와서 -> 메일이나 SNS로 전송해주기 (1.아웃룩, 2.카카오톡, 3.구글(smtp), 4.slack or teams)
+# 7. 지라 이슈 asignee 변경 및 가져오기 기능
+# 8. 지라 이슈 상태 가져오기 및 변경
 
 
 def logging_deco(func):
@@ -60,6 +64,8 @@ class Jira:
             self.list_projects_key.append(project.raw['key'])
         
         self.site_contents = ""
+
+        self.today_yyyymmdd = datetime.now().strftime('%Y-%M-%d')
 
     # RPM 배포 템플릿 생성하기
     def make_template(self, site_code):
@@ -98,6 +104,7 @@ class Jira:
         return jira_template, jira_issue_link
 
     # jql을 사용한 이슈 검색
+    @logging_deco
     def _search_issue(self, project, repoter):
         search_issue_jql = f"summary~AsyncError and project={project} and search_issue={repoter} and status not in (closed, done)"
         jira_issue = self.jira.search_issues(search_issue_jql)
@@ -138,6 +145,10 @@ class Jira:
     def get_comments(self, issue_code):
         return jira.comments(issue_code)
 
+    def get_assignee(self, task_key):
+        issue = self.jira.issue(task_key)
+        return issue.fields.assignee.name
+
     # 특정 이슈의 담당자 변경
     def set_asignee(self):
         pass
@@ -160,6 +171,7 @@ class Jira:
 
 
     # G-Drive 자동 업로드
+    @logging_deco
     def upload_gdrive(self, site_code):
         # 사이트 코드로 업로드할 드라이브 경로 찾기
         for x in os.listdir(path.gdirve_path):
@@ -171,6 +183,8 @@ class Jira:
         for x in os.listdir(path.file_path + "/" + site_code):
             if ".rpm" in x:
                 source_path.append(path.file_path + "/" + site_code + "/" + x)
+            elif ".txt" in x:
+                change_name = x
 
         # 구글 드라이브 데스크탑으로 업로드하기
         try:
@@ -179,7 +193,6 @@ class Jira:
                 print(x, target_path)
             
             # 워드 내용 추가
-            #self.append_docx(target_path+"/패치 내용.docx", datetime.datetime.now().strftime('%Y-%M-%d') + "\n" + self.site_contents)
             print(site_code + " 업로드 완료")
 
             #print(path.dict_gdrive[site_code])
@@ -190,7 +203,20 @@ class Jira:
             print(site_code + " 업로드 실패")
 
 
+        # txt 파일 내용 가져오기
+        site_contents = ""
+        with open(self.file_path+"/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
+            for tmp in file.readlines():
+                site_contents += tmp.replace("#", "")
+        self.site_contents = site_contents
+
+        # docx에 수정 내용 추가
+        print(target_path + "/패치 내용.docx")
+        self.append_docx(target_path + "/패치 내용.docx", "\n\n" + self.today_yyyymmdd + "\n" + self.site_contents)
+            
+
     # 템플릿 만들어서 JIRA 댓글 달기
+    @logging_deco
     def auto_comment(self, site_code, white_list):
         if path.dict_gdrive[site_code] == "":
             print("다운로드 링크 없음")
@@ -216,7 +242,8 @@ class Jira:
 if __name__ == '__main__':
     jira = Jira()
 
-    mode = 2
+    #jira.assign_issue("H0339-28", "")
+    mode = 0
 
     # 임시로 자주 사용하는 기능들을 작성해둠
     if mode == 1:
@@ -238,7 +265,7 @@ if __name__ == '__main__':
         #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
         cnt = 0
         str_res = ""
-        file_path = os.environ["USERPROFILE"] + "/Desktop/tmp1234.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
+        file_path = os.environ["USERPROFILE"] + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
         print(file_path)
 
         for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[0]))):
