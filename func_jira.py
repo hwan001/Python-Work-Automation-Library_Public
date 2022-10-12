@@ -18,7 +18,7 @@ from datetime import datetime
 import time
 import shutil
 import os
-import win32com
+#import win32com
 
 # 기능 추가 할거 : 
 # 1. txt 파일 내용 자동 작성 ㅇ
@@ -65,7 +65,7 @@ class Jira:
         
         self.site_contents = ""
 
-        self.today_yyyymmdd = datetime.now().strftime('%Y-%M-%d')
+        self.today_yyyymmdd = datetime.now().strftime('%Y-%m-%d')
 
     # RPM 배포 템플릿 생성하기
     def make_template(self, site_code):
@@ -96,7 +96,7 @@ class Jira:
         # 해당 코드의 업로드 링크 참조 (미리 작성해둔 딕셔너리)
         download_link = path.dict_gdrive[site_code]
         
-        jira_template = f"{site_name} ({site_code}) RPM 배포\n"
+        jira_template = "*" + site_name + "(" + site_code + ") RPM 배포*\n"
         jira_template += f"\n버전 : \n{site_version} \n" # get RPM으로 얻어와서 여러줄 추가
         jira_template += f"\n수정 내용 : \n{site_contents}\n" # get txt로 얻어와서 여러줄 추가
         jira_template += f"\n다운로드 경로 : \n{download_link}\n" # 업로드 경로가 다운로드 경로
@@ -127,7 +127,7 @@ class Jira:
                 list_tmp = [day.days, iss.key, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
                 text = f"{day.days};[{iss.key}];{iss.fields.summary}"
 
-                if "DEVOPS-" in text or "IOC-" in text:
+                if "DEVOPS-" in text or "IOC-" in text or "H0194" in text:
                     continue
 
                 list_res.append(list_tmp)
@@ -166,16 +166,15 @@ class Jira:
     
     # docx에 수정 내용 이어붙이기
     def append_docx(self, file_name, contents):
-        my_docx = func_docx.Docx()
-        my_docx.append_contents(file_name, contents)
-
-
-    # G-Drive 자동 업로드
+        my_docx = func_docx.Docx(file_name)
+        my_docx.append_contents(contents)
+    
+    # G-Drive 자동 업로드 - 구버전용 이랑 구분할지?
     @logging_deco
     def upload_gdrive(self, site_code):
         # 사이트 코드로 업로드할 드라이브 경로 찾기
         for x in os.listdir(path.gdirve_path):
-            if site_code in x:
+            if site_code + "_" in x:
                 target_path = path.gdirve_path + "/" + x + "/패치"
 
         # 사이트 코드 경로 내부의 rpm 파일 다 가져오기
@@ -190,17 +189,15 @@ class Jira:
         try:
             for x in source_path:
                 shutil.copy(x, target_path)
-                print(x, target_path)
+                #print(x, target_path)
             
             # 워드 내용 추가
-            print(site_code + " 업로드 완료")
-
-            #print(path.dict_gdrive[site_code])
+            print(site_code + " - 업로드 완료")
 
             # 업로드한 페이지 열기
             webbrowser.open(path.dict_gdrive[site_code])
         except:
-            print(site_code + " 업로드 실패")
+            print(site_code + " - 업로드 실패")
 
 
         # txt 파일 내용 가져오기
@@ -212,9 +209,8 @@ class Jira:
 
         # docx에 수정 내용 추가
         print(target_path + "/패치 내용.docx")
-        self.append_docx(target_path + "/패치 내용.docx", "\n\n" + self.today_yyyymmdd + "\n" + self.site_contents)
+        self.append_docx(target_path + "/패치 내용.docx", self.site_contents + "\n")
             
-
     # 템플릿 만들어서 JIRA 댓글 달기
     @logging_deco
     def auto_comment(self, site_code, white_list):
@@ -232,7 +228,7 @@ class Jira:
         # 각 이슈 별로 댓글달고 웹페이지 열기, white_list 이슈코드에 있는 것만 달음, 중복 제거
         #prohibition_list = []
         for issue_code in list(set(issue_code_list)):
-            if issue_code != "" and issue_code in white_list:
+            if issue_code != "" and (issue_code in white_list or "ALL" in white_list):
                 self.add_comment(issue_code, str_template)
 
                 print(config.jira_server + "/browse/" + issue_code)
@@ -242,11 +238,10 @@ class Jira:
 if __name__ == '__main__':
     jira = Jira()
 
-    #jira.assign_issue("H0339-28", "")
-    mode = 0
+    mode = 1
+    white_list = []
 
-    # 임시로 자주 사용하는 기능들을 작성해둠
-    if mode == 1:
+    if mode == 1: # 지라 자동 배포
         # 특정 디렉토리에 있는 사이트 코드(폴더 명)를 가져온다.
         site_codes = []
         for x in os.listdir(path.file_path):
@@ -254,15 +249,14 @@ if __name__ == '__main__':
                 site_codes.append(x)
 
         # 댓글 업로드를 원하는 이슈 번호를 문자열로 넣어주면, 업로드 내용 중 해당 건이 있을 경우만 댓글 달아줌
-        white_list = []
+        #white_list = []
         
         # 준비된 파일 업로드 후 댓글 달기 -> 2022-09-16 성공, docx 수정 및 
         for site_code in site_codes:
             jira.upload_gdrive(site_code)
             jira.auto_comment(site_code, white_list) 
 
-    elif mode == 2:
-        #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
+    elif mode == 2: #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
         cnt = 0
         str_res = ""
         file_path = os.environ["USERPROFILE"] + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
@@ -278,8 +272,7 @@ if __name__ == '__main__':
         with open(file_path, "w") as f:
             f.write(str_res)
 
-    elif mode == 3:
-        # 이슈의 속성을 얻어오는 코드
+    elif mode == 3: # [예시] 이슈의 속성을 얻어오는 코드
         q = 'project = "이슈코드" ORDER BY created DESC'
         issues = jira.jira.search_issues(q)
         for iss in issues:
@@ -292,3 +285,14 @@ if __name__ == '__main__':
         iss = jira.jira.issue('이슈코드')
         for i in dir(iss.fields):
             print(i+":"+str(getattr(iss.fields,i)))
+    
+    elif mode == 4: # [작성중]구버전 배포
+        # 경로 입력받기
+        path_target = "C:/Users/hwan/Documents/tmp"
+        versions = []
+        for x in os.listdir(path_target):
+            if os.path.isdir(path_target + "/" + x):
+                versions.append(x)
+        
+        print([path.dict_gdrive_version[version] for version in versions])
+        white_list = [""]

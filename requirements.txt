@@ -2,7 +2,14 @@ jira
 requests
 selenium
 python-docx
-webbrowser
+#webbrowser
 pyexcel
 pyexcel-xls
 pyexcel-text
+pyautogui
+pyperclip
+
+#win32api
+#pypiwin32
+#pywin32
+pywinauto

@@ -28,6 +28,5 @@ class Excel():
         print(sheet)
 
 if __name__ == '__main__':
-    exc = Excel()
-    exc.test_sheet()
+    
     pass
