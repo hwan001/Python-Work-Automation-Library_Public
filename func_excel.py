@@ -28,5 +28,6 @@ class Excel():
         print(sheet)
 
 if __name__ == '__main__':
-    
+    excel = Excel() 
+    excel.test_sheet()
     pass

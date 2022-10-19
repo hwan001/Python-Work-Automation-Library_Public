@@ -64,8 +64,9 @@ class Jira:
             self.list_projects_key.append(project.raw['key'])
         
         self.site_contents = ""
-
         self.today_yyyymmdd = datetime.now().strftime('%Y-%m-%d')
+        #self.template_string = ""
+        #self.template_issue = ""
 
     # RPM 배포 템플릿 생성하기
     def make_template(self, site_code):
@@ -91,6 +92,7 @@ class Jira:
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[")]:
             if "-" not in x:
                 continue
+
             jira_issue_link.append(x)
 
         # 해당 코드의 업로드 링크 참조 (미리 작성해둔 딕셔너리)
@@ -101,6 +103,9 @@ class Jira:
         jira_template += f"\n수정 내용 : \n{site_contents}\n" # get txt로 얻어와서 여러줄 추가
         jira_template += f"\n다운로드 경로 : \n{download_link}\n" # 업로드 경로가 다운로드 경로
 
+        self.template_string = jira_template
+        self.template_issue = jira_issue_link
+        
         return jira_template, jira_issue_link
 
     # jql을 사용한 이슈 검색
@@ -139,7 +144,6 @@ class Jira:
     def add_comment(self, issue_code, comment):
         comment_to_edit = self.jira.add_comment(issue_code, 'Change this content later')
         comment_to_edit.update(body=comment)
-
 
     # 특정 이슈 댓글 가져오기
     def get_comments(self, issue_code):
@@ -208,7 +212,7 @@ class Jira:
         self.site_contents = site_contents
 
         # docx에 수정 내용 추가
-        print(target_path + "/패치 내용.docx")
+        print("파일 명 : " + target_path + "/패치 내용.docx")
         self.append_docx(target_path + "/패치 내용.docx", self.site_contents + "\n")
             
     # 템플릿 만들어서 JIRA 댓글 달기
@@ -221,12 +225,16 @@ class Jira:
             print("사이트명 없음")
 
         # 사이트 코드가 있으면 템플릿을 만들어서 기록
+        #if self.template_string != "":
+        #    str_template = self.template_string
+        #    issue_code_list = self.template_issue
         if site_code != "":
             str_template, issue_code_list = self.make_template(site_code)
-            print(str_template)
+        else:
+            print("site_code 없음")
+            return
 
-        # 각 이슈 별로 댓글달고 웹페이지 열기, white_list 이슈코드에 있는 것만 달음, 중복 제거
-        #prohibition_list = []
+        # 각 이슈 별로 댓글달고 웹페이지 열기, white_list 이슈코드에 있는 것만, 중복 제거
         for issue_code in list(set(issue_code_list)):
             if issue_code != "" and (issue_code in white_list or "ALL" in white_list):
                 self.add_comment(issue_code, str_template)
@@ -239,19 +247,14 @@ if __name__ == '__main__':
     jira = Jira()
 
     mode = 1
-    white_list = []
+    white_list = [""]
 
-    if mode == 1: # 지라 자동 배포
-        # 특정 디렉토리에 있는 사이트 코드(폴더 명)를 가져온다.
+    if mode == 1: # 지라 자동 배포 -> 2022-09-16 성공
         site_codes = []
         for x in os.listdir(path.file_path):
             if os.path.isdir(path.file_path + "/" + x):
                 site_codes.append(x)
 
-        # 댓글 업로드를 원하는 이슈 번호를 문자열로 넣어주면, 업로드 내용 중 해당 건이 있을 경우만 댓글 달아줌
-        #white_list = []
-        
-        # 준비된 파일 업로드 후 댓글 달기 -> 2022-09-16 성공, docx 수정 및 
         for site_code in site_codes:
             jira.upload_gdrive(site_code)
             jira.auto_comment(site_code, white_list) 
@@ -259,7 +262,7 @@ if __name__ == '__main__':
     elif mode == 2: #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
         cnt = 0
         str_res = ""
-        file_path = os.environ["USERPROFILE"] + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
+        file_path =  path.home_path + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
         print(file_path)
 
         for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[0]))):
@@ -272,7 +275,7 @@ if __name__ == '__main__':
         with open(file_path, "w") as f:
             f.write(str_res)
 
-    elif mode == 3: # [예시] 이슈의 속성을 얻어오는 코드
+    elif mode == 3: # [예시] 이슈의 속성을 얻어오는 코드 -> 안돌아감, 샘플코드임
         q = 'project = "이슈코드" ORDER BY created DESC'
         issues = jira.jira.search_issues(q)
         for iss in issues:
@@ -286,9 +289,9 @@ if __name__ == '__main__':
         for i in dir(iss.fields):
             print(i+":"+str(getattr(iss.fields,i)))
     
-    elif mode == 4: # [작성중]구버전 배포
+    elif mode == 4: # [작성중]구버전 배포 -> 안돌아감
         # 경로 입력받기
-        path_target = "C:/Users/hwan/Documents/tmp"
+        path_target = path.home_path + "/Desktop/old_version"
         versions = []
         for x in os.listdir(path_target):
             if os.path.isdir(path_target + "/" + x):
