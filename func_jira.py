@@ -212,8 +212,8 @@ class Jira:
         self.site_contents = site_contents
 
         # docx에 수정 내용 추가
-        print("파일 명 : " + target_path + "/패치 내용.docx")
-        self.append_docx(target_path + "/패치 내용.docx", self.site_contents + "\n")
+        print("파일 명 : " + target_path + path.gdrive_patch_docx)
+        self.append_docx(target_path + path.gdrive_patch_docx, self.site_contents + "\n")
             
     # 템플릿 만들어서 JIRA 댓글 달기
     @logging_deco
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     jira = Jira()
 
     mode = 1
-    white_list = [""]
+    white_list = ["ALL"]
 
     if mode == 1: # 지라 자동 배포 -> 2022-09-16 성공
         site_codes = []
