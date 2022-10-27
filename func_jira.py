@@ -82,7 +82,7 @@ class Jira:
         
         # txt 파일 내용 가져오기
         site_contents = ""
-        with open(self.file_path+"/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
+        with open(self.file_path + "/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
         self.site_contents = site_contents
@@ -193,7 +193,6 @@ class Jira:
         try:
             for x in source_path:
                 shutil.copy(x, target_path)
-                #print(x, target_path)
             
             # 워드 내용 추가
             print(site_code + " - 업로드 완료")
@@ -299,3 +298,5 @@ if __name__ == '__main__':
         
         print([path.dict_gdrive_version[version] for version in versions])
         white_list = [""]
+
+
