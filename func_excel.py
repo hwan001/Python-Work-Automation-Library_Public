@@ -30,10 +30,4 @@ class Excel():
 if __name__ == '__main__':
     #excel = Excel() 
     #excel.test_sheet()
-    letter=[1, 2, 3]
-    a = 1
-    b = 2
-    if 3 in [letter[2]]:
-        a=b
-    print(a)
     pass

@@ -31,6 +31,13 @@ import os
 # 7. 지라 이슈 asignee 변경 및 가져오기 기능
 # 8. 지라 이슈 상태 가져오기 및 변경
 
+def TEST(func):
+    def wrapped_func(*args):
+        print("*********************테스트 중인 함수입니다.*********************")
+        ret = func(*args)
+        print("*********************결과를 보장할 수 없음.*********************")
+        return ret
+    return wrapped_func
 
 def logging_deco(func):
     def wrapped_func(*args):
@@ -65,11 +72,11 @@ class Jira:
         
         self.site_contents = ""
         self.today_yyyymmdd = datetime.now().strftime('%Y-%m-%d')
-        #self.template_string = ""
-        #self.template_issue = ""
 
-    # RPM 배포 템플릿 생성하기
-    def make_template(self, site_code):
+    def get_projects(self): # 프로젝트 전체 목록 얻어오기 2022-09-08 테스트 성공
+        return self.jira.projects()
+
+    def make_template(self, site_code): # RPM 배포 템플릿 생성하기
         site_name = path.dict_sitename[site_code]
 
         # 해당 사이트 코드 내부의 rpm 파일과 txt 파일 가져오기
@@ -108,20 +115,8 @@ class Jira:
         
         return jira_template, jira_issue_link
 
-    # jql을 사용한 이슈 검색
     @logging_deco
-    def _search_issue(self, project, repoter):
-        search_issue_jql = f"summary~AsyncError and project={project} and search_issue={repoter} and status not in (closed, done)"
-        jira_issue = self.jira.search_issues(search_issue_jql)
-        return jira_issue
-
-    # 프로젝트 전체 목록 얻어오기 2022-09-08 테스트 성공
-    def get_projects(self):
-        return self.jira.projects()
-
-    # 나에게 할당된 이슈들 링크, 제목, 지난 날짜를 알려줌 -> 2022-09-08 성공
-    @logging_deco
-    def get_my_issue(self):
+    def get_my_issue(self): # 나에게 할당된 이슈들 링크, 제목, 지난 날짜를 알려줌 -> 2022-09-08 성공
         list_res = []
         
         for x in self.list_projects_key:
@@ -139,43 +134,47 @@ class Jira:
 
         return list_res
 
-    
-    # 특정 이슈에 댓글 달기 2022-09-08 테스트 성공
-    def add_comment(self, issue_code, comment):
+    def add_comment(self, issue_code, comment): # 특정 이슈에 댓글 달기 2022-09-08 테스트 성공
         comment_to_edit = self.jira.add_comment(issue_code, 'Change this content later')
         comment_to_edit.update(body=comment)
 
-    # 특정 이슈 댓글 가져오기
-    def get_comments(self, issue_code):
+    @TEST
+    def _search_issue(self, project, repoter): # jql을 사용한 이슈 검색
+        search_issue_jql = f"summary~AsyncError and project={project} and search_issue={repoter} and status not in (closed, done)"
+        jira_issue = self.jira.search_issues(search_issue_jql)
+        return jira_issue
+
+    @TEST
+    def get_comments(self, issue_code): # 특정 이슈 댓글 가져오기
         return jira.comments(issue_code)
 
-    def get_assignee(self, task_key):
+    @TEST
+    def get_assignee(self, task_key): # 해당 이슈의 담당자를 얻어옴
         issue = self.jira.issue(task_key)
         return issue.fields.assignee.name
 
-    # 특정 이슈의 담당자 변경
-    def set_asignee(self):
+    @TEST
+    def set_asignee(self): # 특정 이슈의 담당자 변경
         pass
 
-    # 특정 이슈의 보고자 얻어오기
-    def get_repoter(self):
+    @TEST 
+    def get_repoter(self): # 특정 이슈의 보고자 얻어오기
         pass
 
-    # 이슈 상태 변경
-    def set_issue_statue(self):
+    @TEST 
+    def set_issue_statue(self): # 이슈 상태 변경
         pass
 
-    def get_issue_status(self):
+    @TEST
+    def get_issue_status(self): # 이슈 상태 얻기
         pass
     
-    # docx에 수정 내용 이어붙이기
-    def append_docx(self, file_name, contents):
+    def append_docx(self, file_name, contents): # docx에 수정 내용 이어붙이기
         my_docx = func_docx.Docx(file_name)
         my_docx.append_contents(contents)
     
-    # G-Drive 자동 업로드 - 구버전용 이랑 구분할지?
     @logging_deco
-    def upload_gdrive(self, site_code):
+    def upload_gdrive(self, site_code): # G-Drive 자동 업로드 - 구버전용 이랑 구분할지?
         # 사이트 코드로 업로드할 드라이브 경로 찾기
         for x in os.listdir(path.gdirve_path):
             if site_code + "_" in x:
@@ -214,9 +213,8 @@ class Jira:
         print("파일 명 : " + target_path + path.gdrive_patch_docx)
         self.append_docx(target_path + path.gdrive_patch_docx, self.site_contents + "\n")
             
-    # 템플릿 만들어서 JIRA 댓글 달기
     @logging_deco
-    def auto_comment(self, site_code, white_list):
+    def auto_comment(self, site_code, white_list): # 템플릿 만들어서 JIRA 댓글 달기
         if path.dict_gdrive[site_code] == "":
             print("다운로드 링크 없음")
 
