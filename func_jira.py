@@ -246,7 +246,18 @@ if __name__ == '__main__':
     mode = 1
     white_list = ["ALL"]
 
-    if mode == 1: # 지라 자동 배포 -> 2022-09-16 성공
+    if mode == 1: # RPM 배포 자동화
+        """
+        # RPM 배포 자동화
+        - 작성일 : 2022-09-15
+        - 마지막 테스트 날짜 : 2022-10-31, 성공
+        - 기능 사용 대상 :  컴퍼니코드가 존재하는 rpm
+        - 기능 사용 가능 조건 : path.file_path 위치에 컴퍼니 코드 형태의 폴더 > Gerrit(rpm) 수정내용이 담긴 txt, 해당 rpm 존재
+        - 사용 시 주의사항 : 
+            white_list 에 값이 "ALL" 이면 txt에서 검출된 모든 이슈코드에 댓글이 올라감. 
+            일부만 필요시는 리스트에 직접 작성해주면됨.
+            ex) white_list = ["H0000-0000", "H1234-1234"]
+        """
         site_codes = []
         for x in os.listdir(path.file_path):
             if os.path.isdir(path.file_path + "/" + x):
@@ -256,7 +267,15 @@ if __name__ == '__main__':
             jira.upload_gdrive(site_code)
             jira.auto_comment(site_code, white_list) 
 
-    elif mode == 2: #오래된 순서로 나에게 할당된 이슈 가져오기 -> 2022-09-26 성공
+    elif mode == 2: # 나에게 할당된 이슈 오래된 순서로 정렬해서 가져오기
+        """
+        # 나에게 할당된 이슈 오래된 순서로 정렬해서 가져오기
+        - 작성일 : 2022-09-15
+        - 마지막 테스트 날짜 : 2022-10-31, 성공
+        - 기능 사용 대상 : 
+        - 기능 사용 가능 조건 : 
+        - 사용 시 주의사항 : config.py의 token과 id 를 본인의 값으로 변경해주어야함.
+        """
         cnt = 0
         str_res = ""
         file_path =  path.home_path + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
