@@ -1,3 +1,4 @@
+import selectors
 import sys
 import subprocess
 
@@ -8,6 +9,8 @@ try:
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.common.keys import Keys
     from selenium.webdriver.common.alert import Alert
+    from selenium.webdriver.common.by import By
+    
 
     import time
 
@@ -17,7 +20,6 @@ except:
 
 
 import config
-
 
 
 class Selenium():
@@ -35,8 +37,7 @@ class Selenium():
         chrome_driver = webdriver.Chrome(executable_path='./chromedriver.exe', chrome_options = chrome_option)
         self.chrome_driver = chrome_driver
 
-        self.company_branch_url = f"{config.gerrit_host}/gitweb?p=onenet/company_code.git;a=blob;f=ftc_companyName.csv;h=802c5cc6b2867547b4486d21fd8ec1d2e98e327b;hb=refs/heads/master"
-
+        #self.company_branch_url = f"{config.gerrit_host}/gitweb?p=onenet/company_code.git;a=blob;f=ftc_companyName.csv;h=802c5cc6b2867547b4486d21fd8ec1d2e98e327b;hb=refs/heads/master"
 
     def selenium_1(self):
         self.chrome_driver.get(self.company_branch_url)
@@ -74,7 +75,6 @@ class Selenium():
 
         time.sleep(3)
 
-
         #webdriver.ActionChains(dr).send_keys(id+Keys.TAB).perform()
 
         #pyautogui.moveTo(1000, 700, 1)
@@ -95,6 +95,36 @@ class Selenium():
 
         return True
 
+    def 교육영상넘기기(self):
+        import pyautogui
+        baseurl = "https://www.kehrd.com/study/study.html?no=559952&num=1&max_num=0&user_id1=hunesion8306"
+        self.chrome_driver.get(baseurl)
+
+        pop_study = self.chrome_driver.find_element(By.CLASS_NAME, 'pop_study')
+        pop_study = pop_study.find_element(By.CLASS_NAME, 'study_left')
+        pop_study = pop_study.find_element(By.CLASS_NAME, 'study_video')
+        
+        self.chrome_driver.switch_to.frame("frame")
+        
+        while 1:
+            style_play = self.chrome_driver.find_element(By.XPATH, '//*[@id="play"]')
+            print(style_play.value_of_css_property("style"))
+            time.sleep(3)
+        #print("btn_pause.png", "btn_pause.png" in style_play.get_attribute("style"))
+        #print("btn_play.png", "btn_play.png" in style_play.get_attribute("style"))
+
+        while False:
+            style_play = self.chrome_driver.find_element(By.XPATH, '//*[@id="play"]')
+            if "btn_pause.png" in style_play.get_attribute("style"):
+                pyautogui.click(1256, 791) # Next
+                #self.chrome_driver.find_element(By.XPATH, '//*[@id="next"]')
+                #self.chrome_driver.execute_script("arguments[0].click();", self.chrome_driver.find_element(By.XPATH, '//*[@id="next"]'))
+                
+                print("NEXT 클릭")
+            else:
+                print("대기 - 재생 중")
+                time.sleep(10)
 
 if __name__ == '__main__':
     selenium = Selenium()
+    selenium.교육영상넘기기()

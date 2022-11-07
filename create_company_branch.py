@@ -9,7 +9,6 @@ class Gerrit():
     def __init__(self):
         pass
 
-    # gerrit REST API
     def send_api(self, path, method, body={}):
         host = config.gerrit_host + "/a"
         url = host + path
@@ -23,7 +22,7 @@ class Gerrit():
             elif method == 'POST':
                 if body is None:
                     return
-                
+                    
                 response = requests.post(url, headers=headers, data=json.dumps(body, ensure_ascii=False, indent="\t"), auth=auth)
             elif method == 'PUT':
                 response = requests.put(url, auth=auth)
@@ -37,7 +36,6 @@ class Jenkins():
     def __init__(self):
         pass
     
-    # 입력받은 프로젝트 명을 가진 item의 빌드를 api로 진행
     def build(self, project_name=""):
         query = f"curl -X POST {config.jenkins_server}/job/{project_name}/build --user {config.jenkins_user}:{config.jenkins_pw}"
         os.system(query)
@@ -46,7 +44,6 @@ class Ssh():
     def __init__(self):
         pass
 
-    # 컴퍼니 브랜치 repo 시 사용
     def ssh_cmd(ip, port, user, pw, cmds):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
@@ -63,7 +60,7 @@ class my_class:
     def __init__(self, str_version, str_company):
         #list_onenet_project_file = ["", "", "", ""]
 
-        # gerrit에서 특정 조건의 버전들을 얻어옴 (이거 func_gerrit으로?)
+        # gerrit에서 구분자가 다른 버전들 목록을 얻어옴
         gerrit = Gerrit()
         list_hyphen_version = []
         json_tmp = gerrit.send_api("/projects/onenet%2Frpm/branches", "GET")
@@ -319,7 +316,7 @@ class my_class:
     
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        print("no selected function")
+        print("Usage: python create_company_branch.py function_number")
         exit()
     
     list_target = []
@@ -337,10 +334,10 @@ if __name__ == "__main__":
 
         sel = int(sys.argv[1])
         if sel == 1:
-            tmp.Make_CompanyBranch_Details_Manual(isPrint=False, makeTxt=True) # 0927 정상
+            tmp.Make_CompanyBranch_Details_Manual(isPrint=False, makeTxt=True)
         elif sel == 2:
-            res = tmp.git_repo(True) # 2022-07-05 테스트 성공, 0927 정상 
+            res = tmp.git_repo(True)
         elif sel == 3:
-            tmp.jenkins_build() # 2022-09-05 테스트 성공, 0926 정상
+            tmp.jenkins_build()
 
         del tmp

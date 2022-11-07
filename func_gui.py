@@ -12,7 +12,7 @@ except:
     subprocess.check_call([sys.executable,'-m', 'pip', 'install', '-r', 'requirements.txt'])
 """
 import pyautogui
-import pywinauto
+#import pywinauto
 
 class Gui():
     def __init__(self):
@@ -57,11 +57,21 @@ class Gui():
     def set_focus(self):
         pass 
 
+def 교육영상넘기기():
+    my_gui = Gui()
+    # 1. 셀렉터로 처리하기
+    #my_gui.connect_targetElements("한국이러닝인재개발원").print_control_identifiers()
 
-
+    # 2. 좌표로 처리
+    #print(pyautogui.position()) # 이걸로 좌표 알아내기
+    #import time
+    #while True:
+    #    pyautogui.click(993, 793)
+    #    time.sleep(20)
 
 if __name__ == '__main__':
-    my_gui = Gui()
+    #my_gui = Gui()
+    #교육영상넘기기()
     #my_gui.connect_targetElements("메모장").print_control_identifiers()
     #pyautogui.click(200, 100)
     #my_gui.ctrl_a()
@@ -70,7 +80,7 @@ if __name__ == '__main__':
     #my_gui.create_notepad()
     #clip_text = pyperclip.paste()
     #print(clip_text)
-    #print(pyautogui.position())
+    print(pyautogui.position())
     #print(pyautogui.size())
 
 
