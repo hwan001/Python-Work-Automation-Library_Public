@@ -5,27 +5,28 @@
 # tmp = ''.join(map(str, [1, 2, 3, 4, 5, 6, 7]))
 # print(tmp, type(tmp))
 # 
-
-import selenium
-import path
+# 구글 드라이브 경로 정리하기
 import os
+import path as path_my
+from genericpath import isdir
 
-def get_deployInfo(target_path): # target_path 내부의 rpm 파일과 txt 파일명 가져오기
-        site_version = ""
-        change_name = ""
-        seperator_string = "-r" if "releaseVersion_RPM" in target_path else ".r"
-        list_filepath = [] 
+def find_dir(path, str_space):
+    for x in os.listdir(path):
+        if ".ini" in x: continue
+        if "기타" in x: continue
 
-        for x in os.listdir(target_path):
-            if ".rpm" in x:
-                site_version += x.split(seperator_string)[0]+"\n"
-                list_filepath.append(target_path + "/" + x)
-            elif ".txt" in x:
-                change_name = x
+        tmp = f"{path}/{x}".replace("//", "/")
+        if isdir(tmp):
+            print(str_space + x)
+            find_dir(tmp, str_space + "    ")
 
-        return site_version, change_name, list_filepath
+def find_path():
+    target_path = [path_my.gdrive_path_version]
+    
+    for tmp_path in target_path:
+        print("\nstart : ", tmp_path) 
+        find_dir(tmp_path, "")
+        print("\nend : ", tmp_path) 
 
 if __name__ == '__main__':
-
-    for x in get_deployInfo("C:/FTC_downloads/releaseVersion_RPM/3.0.54"):
-        print(x)
+    find_path()

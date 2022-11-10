@@ -157,7 +157,7 @@ class Jira:
 
             for iss in self.jira.search_issues(q):
                 day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                list_tmp = [day.days, iss.key, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
+                list_tmp = [day.days, iss.key, iss.fields.summary, config.jira_server + "/browse/" + iss.key, iss.fields.customfield_10172]
                 text = f"{day.days};[{iss.key}];{iss.fields.summary}"
 
                 if "DEVOPS-" in text or "IOC-" in text or "H0194" in text:
@@ -190,12 +190,10 @@ class Jira:
                     target_path = path.gdrive_path_version + f"/V{mid_path}/{site_code}/패치"
                     break
 
-        print(target_path)
-
+        #print(target_path)
         # 해당 경로 내부의 rpm 파일과 txt 파일명 가져오기
         source_path, change_name, list_filepath = self.get_deployInfo(f"{workspace}/{site_code}")
-        #source_path = source_path.split("\n")[:-1]
-        print(list_filepath, len(list_filepath))
+        #print(list_filepath, len(list_filepath))
 
         # 구글 드라이브 데스크탑으로 업로드하기
         for x in list_filepath:
@@ -247,7 +245,7 @@ class Jira:
 if __name__ == '__main__':
     jira = Jira()
 
-    mode = 1
+    mode = 2
 
     if mode == 1: # Company RPM 배포 자동화
         """
@@ -262,7 +260,7 @@ if __name__ == '__main__':
             일부만 필요시는 리스트에 직접 작성해주면됨.
             ex) white_list = ["H0000-0000", "H1234-1234"]
         """
-        white_list = ["H0158-2547", "H0158-2368"]
+        white_list = [""]
 
         workspace = path.file_path + "/companyVersion_RPM"
         if not isdir(workspace):
@@ -296,7 +294,7 @@ if __name__ == '__main__':
         file_path =  path.home_path + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
         print(file_path)
 
-        for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[0]))):
+        for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[4]))): # 패치 일정으로 정렬
             str_res += str(str_tmp) + "\n"
             cnt+=1
 
@@ -306,21 +304,26 @@ if __name__ == '__main__':
         with open(file_path, "w") as f:
             f.write(str_res)
 
-    elif mode == 3: # [예시] 이슈의 속성을 얻어오는 코드 -> 안돌아감, 샘플코드임
-        q = 'project = "이슈코드" ORDER BY created DESC'
+    elif mode == 3: # 이슈 어트리뷰트 얻어오기
+        #q = 'project = "" ORDER BY created DESC'
+        q = 'key = "H0000-000"'
         issues = jira.jira.search_issues(q)
         for iss in issues:
-            o = jira.jira.issue(iss.key)
+            #o = jira.jira.issue(iss.key)
+            print(iss)
             for i in dir(iss.fields):
-                if i == 'assignee' and "담당자" in str(getattr(iss.fields,i)):
-                    print(iss.key, " - " + iss.raw['fields'][i])
-            print(o.assignee)
+                print(i, str(getattr(iss.fields, i)))
+                #if "" == i:
+                    #print(str(getattr(iss.fields, i)))
+            #    if i == 'assignee' and "담당자" in str(getattr(iss.fields,i)):
+            #        print(iss.key, " - " + iss.raw['fields'][i])
+            #print(o.assignee)
 
-        iss = jira.jira.issue('이슈코드')
-        for i in dir(iss.fields):
-            print(i+":"+str(getattr(iss.fields,i)))
+        #iss = jira.jira.issue('이슈코드')
+        #for i in dir(iss.fields):
+        #    print(i+":"+str(getattr(iss.fields,i)))
     
-    elif mode == 4: # [작성중] Release RPM 배포 자동화
+    elif mode == 4: # Release RPM 배포 자동화
         """
         # Release RPM 배포 자동화
         - 작성일 : 2022-11-04
