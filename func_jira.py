@@ -133,14 +133,15 @@ class Jira:
         
         # 내용 파싱해서 수정된 이슈코드 얻기
         jira_issue_link = []
-        for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[")]:
+        for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[") if "]" in tmp]:
             if "-" not in x:
                 continue
 
             jira_issue_link.append(x)
 
         # 해당 코드의 업로드 링크 참조 (미리 작성해둔 딕셔너리)
-        jira_template = "*" + target + f"({site_code}) " if "/companyVersion_RPM" in workspace else " "
+        jira_template = "*" + target 
+        jira_template += f"({site_code}) " if "/companyVersion_RPM" in workspace else " "
         jira_template += "RPM 배포*\n"
         jira_template += f"\n버전 : \n{site_version} \n" # get RPM으로 얻어와서 여러줄 추가
         jira_template += f"\n수정 내용 : \n{site_contents}\n" # get txt로 얻어와서 여러줄 추가
@@ -157,9 +158,8 @@ class Jira:
 
             for iss in self.jira.search_issues(q):
                 day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                list_tmp = [day.days, iss.key, iss.fields.summary, config.jira_server + "/browse/" + iss.key, iss.fields.customfield_10172]
-                text = f"{day.days};[{iss.key}];{iss.fields.summary}"
-
+                list_tmp = [day.days, iss.key, iss.fields.customfield_10172, iss.fields.customfield_10121, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
+                text = f"[{iss.key}]"
                 if "DEVOPS-" in text or "IOC-" in text or "H0194" in text:
                     continue
 
@@ -190,7 +190,7 @@ class Jira:
                     target_path = path.gdrive_path_version + f"/V{mid_path}/{site_code}/패치"
                     break
 
-        #print(target_path)
+        print(target_path)
         # 해당 경로 내부의 rpm 파일과 txt 파일명 가져오기
         source_path, change_name, list_filepath = self.get_deployInfo(f"{workspace}/{site_code}")
         #print(list_filepath, len(list_filepath))
@@ -245,8 +245,9 @@ class Jira:
 if __name__ == '__main__':
     jira = Jira()
 
-    mode = 2
-
+    mode = 1
+    white_list = [""]
+    
     if mode == 1: # Company RPM 배포 자동화
         """
         # Company RPM 배포 자동화
@@ -260,7 +261,7 @@ if __name__ == '__main__':
             일부만 필요시는 리스트에 직접 작성해주면됨.
             ex) white_list = ["H0000-0000", "H1234-1234"]
         """
-        white_list = [""]
+        #white_list = ["ALL"]
 
         workspace = path.file_path + "/companyVersion_RPM"
         if not isdir(workspace):
@@ -306,7 +307,7 @@ if __name__ == '__main__':
 
     elif mode == 3: # 이슈 어트리뷰트 얻어오기
         #q = 'project = "" ORDER BY created DESC'
-        q = 'key = "H0000-000"'
+        q = 'key = "H0123-0000"'
         issues = jira.jira.search_issues(q)
         for iss in issues:
             #o = jira.jira.issue(iss.key)
@@ -336,8 +337,8 @@ if __name__ == '__main__':
             일부만 필요시는 리스트에 직접 작성해주면됨.
             ex) white_list = ["H0000-0000", "H1234-1234"]
         """
-        
-        white_list = [""]
+        #white_list = []
+
         workspace = path.file_path + "/releaseVersion_RPM"
 
         if not isdir(workspace):
