@@ -2,7 +2,7 @@ jira
 requests
 selenium
 python-docx
-#webbrowser
+webbrowser
 pyexcel
 pyexcel-xls
 pyexcel-text
