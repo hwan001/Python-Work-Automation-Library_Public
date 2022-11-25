@@ -36,26 +36,12 @@ def logging_deco(func):
 
 class Jira:
     def __init__(self):
-        # Target Files
-        self.file_path = path.file_path
-
         # Jira Connection
         self.url_prefix = config.jira_server + "/browse/"
         self.options = {'server': config.jira_server}
         self.jira = JIRA(self.options, basic_auth=config.jira_basic_auth)
         self.myid = config.jira_myid
-
-        # Get All Project Key
-        self.list_projects_key = []
-        for project in self.get_projects():
-            self.list_projects_key.append(project.raw['key'])
-        
-        self.site_contents = ""
         self.today_yyyymmdd = datetime.now().strftime('%Y-%m-%d')
-
-
-    def get_projects(self) -> list:
-        return self.jira.projects()
 
 
     def get_deployInfo(self, target_path:str, site_code:str) -> tuple[str, str, list]:
@@ -92,7 +78,6 @@ class Jira:
         with open(txt_filename, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
-        self.site_contents = site_contents
         
         jira_issue_link = []
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[") if "]" in tmp]:
@@ -109,30 +94,12 @@ class Jira:
 
         return jira_template, jira_issue_link
 
-    @logging_deco
-    def get_my_issue(self):
-        list_res = []
-        
-        for x in self.list_projects_key:
-            q = f'project = "{x}" AND assignee = {self.myid} ORDER BY created DESC'
-
-            for iss in self.jira.search_issues(q):
-                day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                list_tmp = [day.days, iss.key, iss.fields.customfield_10172, iss.fields.customfield_10121, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
-                text = f"[{iss.key}]"
-                if "DEVOPS-" in text or "IOC-" in text or "H0194" in text:
-                    continue
-
-                list_res.append(list_tmp)
-
-        return list_res
-
     def add_comment(self, issue_code:str, comment:str) -> None: 
         """ issue_code에 댓글 추가 """
         comment_to_edit = self.jira.add_comment(issue_code, 'Change this content later')
         comment_to_edit.update(body=comment)
 
-    def append_contents(self, file_name:str, paragraph:str) -> None:
+    def append_docx(self, file_name:str, paragraph:str) -> None:
         """ 구글 드라이브 패치 내용.docx에 txt 파일 내용 추가 """
         try:
             doc = docx.Document(file_name)
@@ -177,10 +144,9 @@ class Jira:
         with open(workspace + "/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
             for tmp in file.readlines():
                 site_contents += tmp.replace("#", "")
-        self.site_contents = site_contents
 
         print("파일 명 : " + target_path + path.gdrive_patch_docx)
-        self.append_docx(target_path + path.gdrive_patch_docx, self.site_contents + "\n")
+        self.append_docx(target_path + path.gdrive_patch_docx, site_contents + "\n")
 
     @logging_deco
     def auto_comment(self, site_code:str, white_list:list, workspace:str) -> str:
@@ -210,7 +176,7 @@ if __name__ == '__main__':
     RPM 배포 자동화 스크립트
     - 최초 작성일 : 2022-09-15
     - 마지막 수정일 : 2022-11-022
-    - 마지막 테스트 날짜 : 2022-11-22, 실패 -> 워크스페이스 말고, 사이트코드로 구분하기
+    - 마지막 테스트 날짜 : 2022-11-23, 성공
     - 사용 조건 : 
         1. workspace 위치에 컴퍼니 코드(버전)을 이름으로 가진 폴더(수정내용.txt, .rpm 파일) 존재
         2. path.py에 해당 컴퍼니 코드(버전)의 정보 존재
