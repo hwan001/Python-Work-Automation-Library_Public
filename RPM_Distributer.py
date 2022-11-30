@@ -43,7 +43,6 @@ class Jira:
         self.myid = config.jira_myid
         self.today_yyyymmdd = datetime.now().strftime('%Y-%m-%d')
 
-
     def get_deployInfo(self, target_path:str, site_code:str) -> tuple[str, str, list]:
         """ 
         target_path 내부의 파일들 가져옴 
@@ -65,9 +64,17 @@ class Jira:
 
         return site_version, change_name, list_filepath
 
-
-    def make_template(self, site_code:str, workspace:str) -> str:
-        """ 지라 댓글 탬플릿 """
+    def make_template(self, site_code:str, workspace:str) -> tuple[str, list]:
+        """ 
+        지라 댓글 탬플릿 함수
+        Args:
+        - site_code : 사이트 코드
+        - workspace : 작업 경로, path.file_path를 기본으로 사용
+        
+        Returns:
+        - jira_template : 지라 댓글에 남길 문자열
+        - jira_issue_link : txt에서 검출된 지라 이슈 코드들
+        """
         target = path.dict_company[site_code]["name"]
         download_link = path.dict_company[site_code]["url"]
 
@@ -75,10 +82,14 @@ class Jira:
 
         site_contents = ""
         txt_filename = f"{workspace}/{site_code}/{change_name}"
-        with open(txt_filename, "r", encoding="utf8") as file:
-            for tmp in file.readlines():
-                site_contents += tmp.replace("#", "")
         
+        try:
+            with open(txt_filename, "r", encoding="utf8") as file:
+                for tmp in file.readlines():
+                    site_contents += tmp.replace("#", "")
+        except:
+            return "", []
+
         jira_issue_link = []
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[") if "]" in tmp]:
             if "-" not in x:
@@ -141,12 +152,15 @@ class Jira:
         webbrowser.open(path.dict_company[site_code]["url"])
 
         site_contents = ""
-        with open(workspace + "/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
-            for tmp in file.readlines():
-                site_contents += tmp.replace("#", "")
+        try:
+            with open(workspace + "/" + site_code + "/" + change_name, "r", encoding="utf8") as file:
+                for tmp in file.readlines():
+                    site_contents += tmp.replace("#", "")
 
-        print("파일 명 : " + target_path + path.gdrive_patch_docx)
-        self.append_docx(target_path + path.gdrive_patch_docx, site_contents + "\n")
+            print("파일 명 : " + target_path + path.gdrive_patch_docx)
+            self.append_docx(target_path + path.gdrive_patch_docx, site_contents + "\n")
+        except:
+            pass
 
     @logging_deco
     def auto_comment(self, site_code:str, white_list:list, workspace:str) -> str:
@@ -162,6 +176,9 @@ class Jira:
         else:
             return "사이트 코드 없음"
 
+        if issue_code_list == []:
+            return "No Issue"
+
         for issue_code in list(set(issue_code_list)):
             if issue_code != "" and (issue_code in white_list or "ALL" in white_list):
                 self.add_comment(issue_code, str_template)
@@ -175,15 +192,19 @@ if __name__ == '__main__':
     """
     RPM 배포 자동화 스크립트
     - 최초 작성일 : 2022-09-15
-    - 마지막 수정일 : 2022-11-022
-    - 마지막 테스트 날짜 : 2022-11-23, 성공
+    - 마지막 수정일 : 2022-11-29
+    - 마지막 사용일 : 2022-11-29 성공
     - 사용 조건 : 
         1. workspace 위치에 컴퍼니 코드(버전)을 이름으로 가진 폴더(수정내용.txt, .rpm 파일) 존재
         2. path.py에 해당 컴퍼니 코드(버전)의 정보 존재
+        3. config.py에 id와 token값이 기입되어 있고, Jira 시스템 상에서도 유효해야 함
     - 주의 사항 : 
         1. white_list 에 값이 "ALL" 이면 txt에서 검출된 모든 이슈코드에 댓글이 올라감. 
-        2. 수정 사항 중 일부 이슈만 필요할 경우 white_list에 이슈코드 직접 기입.
+        2. txt파일이 있고, 수정 사항 중 일부 이슈에만 댓글을 남길 경우 white_list에 이슈코드 직접 기입.
             ex) white_list = ["H0000-0000", "H1234-1234"]
+        3. txt 파일이 없을 경우 지라 댓글과 패치 내용(구글 드라이브)이 남지 않음
+        4. path.py에 컴퍼니 코드가 없을 경우 작업에서 생략됨
+        5. 작업이 완료된 대상은 path.after_upload_path + "/" + jira.today_yyyymmdd 경로로 이동됨
     """
     white_list = ["ALL"]
     
@@ -197,11 +218,11 @@ if __name__ == '__main__':
         if isdir(workspace + "/" + x) and x in [key for key in path.dict_company]:
             site_codes.append(x)
 
-    if not isdir(workspace):
-        os.mkdir(path.after_upload_path)
-
     jira = Jira()
+    if not isdir(workspace):
+        os.mkdir(path.after_upload_path + "/" + jira.today_yyyymmdd)
+
     for site_code in site_codes:
         jira.upload_gdrive(site_code, workspace)
         jira.auto_comment(site_code, white_list, workspace) 
-        shutil.move(workspace + "/" + site_code, path.after_upload_path + "/" + site_code)
+        shutil.move(workspace + "/" + site_code, path.after_upload_path + "/" + jira.today_yyyymmdd + "/" + site_code)
