@@ -45,8 +45,17 @@ class Jira:
 
     def get_deployInfo(self, target_path:str, site_code:str) -> tuple[str, str, list]:
         """ 
-        target_path 내부의 파일들 가져옴 
-        output : siteVersion, changeName, filePathList
+        target_path 내부 파일들의 정보를 가져옴.
+        make_template 안에서 사용됨.
+
+        Args:
+        - target_path : 
+        - site_code : 사이트
+        
+        Returns:
+        - siteVersion : 
+        - changeName : 
+        - filePathList : 
         """
         site_version = ""
         change_name = ""
@@ -106,7 +115,13 @@ class Jira:
         return jira_template, jira_issue_link
 
     def add_comment(self, issue_code:str, comment:str) -> None: 
-        """ issue_code에 댓글 추가 """
+        """ 
+        issue_code에 댓글 추가 
+
+        Args:
+        - issue_code : 이슈 코드
+        - comment : 댓글
+        """
         comment_to_edit = self.jira.add_comment(issue_code, 'Change this content later')
         comment_to_edit.update(body=comment)
 
