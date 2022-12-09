@@ -195,7 +195,7 @@ class Jira:
             return "No Issue"
 
         for issue_code in list(set(issue_code_list)):
-            if issue_code != "" and (issue_code in white_list or "ALL" in white_list):
+            if issue_code in white_list or "ALL" in white_list:
                 self.add_comment(issue_code, str_template)
                 print(config.jira_server + "/browse/" + issue_code)
                 webbrowser.open(config.jira_server + "/browse/" + issue_code)
