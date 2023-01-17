@@ -108,17 +108,17 @@ class Jira:
         - list_res : [[지난 날짜, 이슈 코드, 패치 일정, 고객사, 내용 요약, url], ...]
         """
         list_res = []
-        list_keyword = ["DEVOPS-", "IOC-", "H0194"]
         for x in self.list_projects_key:
             q = f'project = "{x}" AND assignee = {self.myid} ORDER BY created DESC'
-
-            for iss in self.jira.search_issues(q):
-                day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
-                list_tmp = [day.days, iss.key, iss.fields.customfield_10172, iss.fields.customfield_10121, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
-                if any([True if keyword in f"[{iss.key}]" else False for keyword in list_keyword]):
-                    continue
+            try:
+                for iss in self.jira.search_issues(q):
+                    day = datetime.now() - datetime.strptime(iss.fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
+                    list_tmp = [day.days, iss.key, iss.fields.customfield_10172, iss.fields.customfield_10121, iss.fields.summary, config.jira_server + "/browse/" + iss.key]
                     
-                list_res.append(list_tmp)
+                    list_res.append(list_tmp)
+            except:
+                pass
+
         return list_res
 
 if __name__ == '__main__':
@@ -134,20 +134,26 @@ if __name__ == '__main__':
         - 사용 시 주의사항 : config.py의 token과 id 를 본인의 값으로 변경해주어야함.
         """
         cnt = 0
-        str_res = ""
         file_path =  path.home_path + f"/Desktop/MyIssue_{jira.today_yyyymmdd}.txt" # 파일명, 경로 변경 필요 (날짜 넣기)
-        print(file_path)
-
-        for str_tmp in list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[4]))): # 패치 일정으로 정렬
+        list_result = list(reversed(sorted(jira.get_my_issue(), key=lambda x:x[0])))
+        
+        str_res = ""
+        for str_tmp in list_result:
             str_res += str(str_tmp) + "\n"
             cnt+=1
-
+        
+        str_res_2 = ""
+        for str_tmp in list_result:
+            str_res_2 += str(str_tmp[1]) + "\n"
+            cnt+=1
+        
         print("count :" + str(cnt))
 
         with open(file_path, "w") as f:
             f.write(str_res)
+            f.write(str_res_2)
 
-    elif mode == 3: # 이슈 속성 얻어오기
+    elif mode == 2: # 이슈 속성 얻어오기
         #q = 'project = "" ORDER BY created DESC'
         q = 'key = "H0123-0000"'
         issues = jira.jira.search_issues(q)
@@ -165,4 +171,6 @@ if __name__ == '__main__':
         #iss = jira.jira.issue('이슈코드')
         #for i in dir(iss.fields):
         #    print(i+":"+str(getattr(iss.fields,i)))
+    elif mode == 3:
+        print(jira.get_my_issue())
     

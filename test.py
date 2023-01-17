@@ -12,21 +12,28 @@ from genericpath import isdir
 
 def find_dir(path, str_space):
     for x in os.listdir(path):
+        tmp = f"{path}/{x}".replace("//", "/")
+        if isdir(tmp):
+            print(str_space + x)
+            find_dir(tmp, str_space + "  ")
+
+def make_dir(path):
+    for x in os.listdir(path):
         if ".ini" in x: continue
         if "기타" in x: continue
 
         tmp = f"{path}/{x}".replace("//", "/")
         if isdir(tmp):
-            print(str_space + x)
-            find_dir(tmp, str_space + "    ")
+            pass
 
 def find_path():
     target_path = [path_my.gdrive_path_version]
     
     for tmp_path in target_path:
         print("\nstart : ", tmp_path) 
-        find_dir(tmp_path, "")
+        make_dir(tmp_path, "")
         print("\nend : ", tmp_path) 
 
 if __name__ == '__main__':
-    find_path()
+    find_dir(path_my.gdrive_path_version, "")
+
