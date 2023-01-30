@@ -1,6 +1,6 @@
 import youtube_dl
 
-url="https://www.youtube.com/watch?v=jduQ7P6ASgE"
+url="youtube_url"
 options = {
     'format':'137' # mp4
 }

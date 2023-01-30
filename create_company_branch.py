@@ -99,8 +99,8 @@ class my_class:
         str_gerrit_system_comment = "[onenet][system] " + str_gerrit_branch + " 생성 후 CONFIG_COMPANY_NAME 변경 : " + str_company
     
         # jenkins var
-        str_jenkins = "i-oneNet_V" + str_gerrit
-        str_jenkins_2 = "i-oneNet_V" + str_version
+        str_jenkins = "name_v" + str_gerrit
+        str_jenkins_2 = "name_v" + str_version
         
         # 아래 내용은 낮은 버전에서 변경되는 경우가 있음.
         self.list_jenkins_build_text = [
@@ -117,12 +117,12 @@ class my_class:
 
         self.list_repo_code = [
             "cd /home/qa",
-            "mkdir onenet_tmp",
-            "cd onenet_tmp",
+            "mkdir test_tmp",
+            "cd test_tmp",
             "mkdir " + str_gerrit,
             "cd " + str_gerrit,
             "mkdir log",
-            f"repo init -u ssh://{config.jenkins_ssh}/onenet/manifest -m release.xml -b " + str_gerrit_branch_2 + " | tee -a log/repo_1.log",
+            f"repo init -u ssh://{config.jenkins_ssh}/test/manifest -m release.xml -b " + str_gerrit_branch_2 + " | tee -a log/repo_1.log",
             "repo sync | tee -a log/repo_2.log",
             "repo start " + str_gerrit_branch_2 + " --all | tee -a log/repo_3.log",
             "repo branch | tee -a log/repo_4.log",
