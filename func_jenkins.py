@@ -22,7 +22,7 @@ class Jenkins():
         pass
 
     # 입력받은 프로젝트 명을 가진 item의 빌드를 api로 진행
-    def build(self, project_view = "i-oneNet_Company", project_name=""):
+    def build(self, project_view = "test_Company", project_name=""):
         #query = f"curl -X POST {config.jenkins_server}/view/{project_view}/job/{project_name}/build --user {config.jenkins_user}:{config.jenkins_pw}"
         query = f"curl -X POST {config.jenkins_server}/job/{project_name}/build --user {config.jenkins_user}:{config.jenkins_pw}"
         

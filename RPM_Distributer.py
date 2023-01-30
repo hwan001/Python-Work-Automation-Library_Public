@@ -1,23 +1,14 @@
-from genericpath import isdir
-import sys
-import subprocess
-
-try:
-    from jira import JIRA
-    import webbrowser
-    import docx
-
-except:
-    subprocess.check_call([sys.executable,'-m', 'pip', 'install', '--upgrade', 'pip'])
-    subprocess.check_call([sys.executable,'-m', 'pip', 'install', '-r', 'requirements.txt'])
-
-import config
-import path
-
-from datetime import datetime
 import time
 import shutil
 import os
+import sys
+import config
+import path
+import webbrowser
+import docx
+from jira import JIRA
+from datetime import datetime
+from genericpath import isdir
 
 
 def logging_deco(func):
@@ -31,6 +22,15 @@ def logging_deco(func):
         elapsed_r = end_r - start_r
         elapsed_p = end_p - start_p
         print(f'{func.__name__} : {elapsed_r:.6f}sec (Perf_Counter) / {elapsed_p:.6f}sec (Process Time)')
+        return ret
+    return wrapped_func
+
+def Exception_decorator(func):
+    def wrapped_func(*args):
+        try:
+            ret = func(*args)
+        except Exception as e:
+            print(e)
         return ret
     return wrapped_func
 
@@ -75,7 +75,8 @@ class Jira:
 
     def make_template(self, site_code:str, workspace:str) -> tuple[str, list]:
         """ 
-        지라 댓글 탬플릿 함수
+        Comment : 지라 댓글 탬플릿 함수
+        Author : 
         Args:
         - site_code : 사이트 코드
         - workspace : 작업 경로, path.file_path를 기본으로 사용
@@ -86,21 +87,25 @@ class Jira:
         """
         target = path.dict_company[site_code]["name"]
         download_link = path.dict_company[site_code]["url"]
-
+        
         site_version, change_name, _ = self.get_deployInfo(workspace, site_code)
 
         site_contents = ""
         txt_filename = f"{workspace}/{site_code}/{change_name}"
-        
+
         try:
             with open(txt_filename, "r", encoding="utf8") as file:
                 for tmp in file.readlines():
                     site_contents += tmp.replace("#", "")
-        except:
+        except Exception as e:
+            print(e) # 에러처리용 데코레이터 추가
             return "", []
+
+
 
         jira_issue_link = []
         for x in [tmp.split("]")[0] for tmp in site_contents.replace(" ", "").split("[") if "]" in tmp]:
+            print(x)
             if "-" not in x:
                 continue
             jira_issue_link.append(x)
@@ -190,7 +195,7 @@ class Jira:
             str_template, issue_code_list = self.make_template(site_code, workspace)
         else:
             return "사이트 코드 없음"
-
+        
         if issue_code_list == []:
             return "No Issue"
 
@@ -239,5 +244,5 @@ if __name__ == '__main__':
 
     for site_code in site_codes:
         jira.upload_gdrive(site_code, workspace)
-        jira.auto_comment(site_code, white_list, workspace) 
+        print(jira.auto_comment(site_code, white_list, workspace))
         shutil.move(workspace + "/" + site_code, path.after_upload_path + "/" + jira.today_yyyymmdd + "/" + site_code)

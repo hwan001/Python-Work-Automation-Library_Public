@@ -86,7 +86,7 @@ class Ssh():
 
 
     # 원격으로 관리 대상 서버의 프로퍼티를 체크하여 이상 유무를 파악
-    def ssh_onenet_property_check(cmd):
+    def ssh_property_check(cmd):
         servers = config.ssh_servers
 
         for server in servers:
